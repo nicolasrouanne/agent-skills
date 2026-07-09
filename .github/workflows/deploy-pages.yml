@@ -1,0 +1,55 @@
+name: Deploy to GitHub Pages
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy skill pages for Jekyll
+        run: |
+          mkdir -p skills
+          for dir in .claude/skills/*/; do
+            name=$(basename "$dir")
+            src=$(find "$dir" -maxdepth 1 -iname 'SKILL.md' -print -quit)
+            if [ -z "$src" ]; then
+              echo "::error::no SKILL.md found in $dir"
+              exit 1
+            fi
+            cp "$src" "skills/${name}.md"
+          done
+      - name: Copy knowledge pages for Jekyll
+        run: |
+          mkdir -p knowledge
+          for src in .claude/knowledge/*.md; do
+            [ -e "$src" ] || continue
+            cp "$src" "knowledge/$(basename "$src")"
+          done
+      - uses: actions/configure-pages@v5
+      - uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./
+          destination: ./_site
+      - uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

@@ -1,0 +1,12 @@
+remote_theme: just-the-docs/just-the-docs
+
+title: Agent Skills
+description: Curated public subset of my Claude Code setup — skills, guides, and usage insights.
+baseurl: /agent-skills
+
+exclude:
+  - config/
+  - notes/
+  - .claude/settings.local.json
+  - Gemfile
+  - Gemfile.lock
