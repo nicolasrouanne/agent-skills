@@ -25,7 +25,8 @@ Ask with AskUserQuestion if the destination isn't obvious. Default to **Tech sub
 1. Gather context from the conversation, a file path, or a topic argument.
 2. Ask the user: destination (if not obvious), title (propose one, let them edit), angle.
 3. Read `.claude/knowledge/writing-style.md` and apply it.
-4. Draft and publish per destination (below).
+4. Draft the article, then run the **sensitive-terms scan (required)**: write the final draft(s) to temp files and run `~/dev/claude/scripts/scan_sensitive.sh <files>`. Exit 1 → show the matches and stop: the Articles database is external-facing, so rewrite around the term or get the user's explicit clearance for that specific match; the Tech subpage is internal, so just ask. Exit 2 (terms list unreachable) → fail closed: don't publish until the scan can run.
+5. Publish per destination (below).
 
 ### Articles database
 

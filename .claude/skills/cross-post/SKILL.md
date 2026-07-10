@@ -28,7 +28,12 @@ Cross-post content to LinkedIn, Twitter/X, and Slack. Can be used standalone or 
 
 4. **Show the user a preview** of each post before publishing
 
-5. **Post using the corresponding MCP tool** and report results with links
+5. **Sensitive-terms scan (required, before any posting).** Write each final post to a temp file and run `~/dev/claude/scripts/scan_sensitive.sh <files>`:
+   - **Exit 0** → proceed.
+   - **Exit 1** → show the matches and do **not** post. LinkedIn/X are public: rewrite around the term, or post only after the user explicitly clears that specific match. Slack is internal: ask the user whether the match is acceptable there.
+   - **Exit 2** (terms list unreachable) → fail closed: report it and don't post until the scan can run.
+
+6. **Post using the corresponding MCP tool** and report results with links
 
 ## Platform-Specific Formats
 
