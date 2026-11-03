@@ -30,38 +30,36 @@ La skill applique une heuristique en cascade :
 
 ## Your Task
 
-Quand l'utilisateur invoque `/qonto-invoices [année]` :
+Quand l'utilisateur invoque `/qonto-invoices [année] [org]` (org : `qraft` par défaut, ou `gybe`) :
 
-### 1. Récupérer le mapping IBAN → compte (dynamique)
+### 1. Identifiants
 
+API REST Qonto, comme `/qonto-receipts` : header `Authorization: <organization_id>:<api_key>`. Variables `QONTO_<ORG>_ORGANIZATION_ID` / `QONTO_<ORG>_API_KEY` si elles sont définies, sinon 1Password `chezmoi_qonto_<org>` (vault `AI Agents`, champs `organization_id` + `api_key`).
+
+### 2. Récupérer l'organisation et toutes les factures clients
+
+Fichiers dans le scratchpad :
+
+```bash
+AUTH="$QONTO_QRAFT_ORGANIZATION_ID:$QONTO_QRAFT_API_KEY"
+curl -s -H "Authorization: $AUTH" https://thirdparty.qonto.com/v2/organization > org.json
+curl -s -H "Authorization: $AUTH" "https://thirdparty.qonto.com/v2/client_invoices?per_page=500" > invoices.json
+jq '{total: .meta.total_count, got: (.client_invoices | length)}' invoices.json
 ```
-mcp__qonto__get_qonto_organization
-```
 
-→ Extrais `bank_accounts[].iban` + `bank_accounts[].name`. Construis un objet JSON `{ "<iban>": "<name>", ... }`. **Ne jamais hardcoder un IBAN ni un nom de compte spécifique dans le repo.**
-
-### 2. Récupérer toutes les factures clients
-
-```
-mcp__qonto__get_client_invoices  per_page=500  current_page=1
-```
-
-⚠ **Important** : utiliser `per_page=500` (ou un nombre ≥ `total_count`). Avec `per_page=100`, la pagination Qonto trie par DESC et la concaténation page 1 + page 2 peut produire des doublons / oublis (bug observé). Toujours vérifier `meta.total_count` vs `client_invoices | length`.
-
-Le résultat dépasse 200k caractères → il sera sauvegardé dans un fichier temporaire (`tool-results/.../mcp-qonto-get_client_invoices-*.txt`). Récupère le chemin du fichier dans le message d'erreur, puis passe-le à jq directement.
+`total` et `got` doivent être égaux. ⚠ Utiliser `per_page=500` (ou un nombre ≥ `total_count`) : avec `per_page=100`, la pagination Qonto trie par DESC et la concaténation page 1 + page 2 peut produire des doublons / oublis (bug observé).
 
 ### 3. Lancer l'agrégation
+
+Le mapping IBAN → compte vient de `org.json`. **Ne jamais hardcoder un IBAN ni un nom de compte dans le repo.**
 
 ```bash
 jq -r \
   --arg year "2025" \
   --arg window "2" \
-  --argjson accounts "$(cat <<'EOF'
-{"<iban1>":"<nom1>","<iban2>":"<nom2>"}
-EOF
-)" \
+  --argjson accounts "$(jq '[.organization.bank_accounts[] | {(.iban): .name}] | add' org.json)" \
   -f ~/dev/claude/.claude/skills/qonto-invoices/aggregate.jq \
-  <chemin-du-fichier-tool-result>
+  invoices.json
 ```
 
 - Sans argument utilisateur : `year` = année en cours - 1 (cas le plus fréquent = bilan annuel).
@@ -92,6 +90,6 @@ Affiche la sortie brute du script (déjà formatée), puis :
 
 ## Notes
 
-- Le script ne traite que les factures **clients** (`get_client_invoices`). Pour les factures fournisseurs ou les notes de crédit, voir `get_supplier_invoices` / `get_credit_notes`.
+- Le script ne traite que les factures **clients** (`/v2/client_invoices`). Pour les factures fournisseurs ou les notes de crédit, voir `/v2/supplier_invoices` / `/v2/credit_notes`.
 - Les montants HT sont calculés comme `total_amount - vat_amount` (plus simple et exact que de sommer les `items[].subtotal`).
 - L'IBAN du compte de destination est lu dans `payment_methods[0].iban` — vérifier qu'il n'y a pas de multi-IBAN par facture (à date, un seul moyen de paiement par facture).

@@ -23,7 +23,7 @@ Streamlined workflow to commit, branch, push, and create a PR in one command.
    - If an issue clearly matches the changes, link it automatically (no need to ask)
    - If unsure about a potential match, ask the user with `AskUserQuestion` listing the candidates
    - If no issue seems related and you're confident there isn't one, don't link and don't ask
-5. **Create a feature branch**: The session runs in a `--worktree` so you're already on an isolated branch based on `origin/main`. Rename it to a descriptive branch name: `git branch -m <branch-name>`
+5. **Create a feature branch**: check the current branch first. On a throwaway branch created for this session's worktree, rename it (`git branch -m <branch-name>`); on `main`, create one (`git switch -c <branch-name>`); on an existing feature branch, ask before renaming — it may already back a PR, and new work belongs in a `git worktree` (CLAUDE.md).
 6. **Run linters/tests before committing**: Check the project's CLAUDE.md or README for lint/test commands (e.g. rubocop, eslint, rspec). Run the relevant ones for the changed files. Fix any issues before proceeding.
 7. **Check if docs/ need updating**: Review the changed files. If any changes affect topics documented in `docs/` (per the Documentation Maintenance mapping in CLAUDE.md), update the relevant doc(s) before committing. Include doc updates in the same commit or a separate one.
 8. **Stage and commit** only the relevant changes with a descriptive commit message following the repo's style

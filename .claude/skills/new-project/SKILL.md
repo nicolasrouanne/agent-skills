@@ -1,6 +1,6 @@
 ---
 name: new-project
-description: Scaffold a new full-stack project with backend (Scalingo) and Next.js frontend (Cloudflare Pages), initialize git/GitHub, and plan using GitHub issues.
+description: Scaffold a new full-stack project with backend (Scalingo) and Next.js frontend (Cloudflare Workers), initialize git/GitHub, and plan using GitHub issues.
 title: /new-project
 parent: Skills
 permalink: /skills/new-project/
@@ -78,7 +78,7 @@ Scaffold a Next.js 16 app with:
 - **CLAUDE.md**: Project-level instructions including:
   - Project overview and tech stack
   - How to run backend and frontend locally
-  - Deployment targets (Scalingo for api/, Cloudflare Pages for web/)
+  - Deployment targets (Scalingo for api/, Cloudflare Workers for web/)
   - Lint/test commands for each stack
 - **README.md**: Project title, description, tech stack table, quick start commands
 - **PLAN.md**: Agent team workflow with 4 phases:

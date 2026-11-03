@@ -1,6 +1,6 @@
 ---
 name: cra
-description: "Suivi du temps : réconciliation Toggl, Billi CRA et git commits. Vue d'ensemble et détection d'écarts entre les sources."
+description: "Suivi du temps : clôture mensuelle des CRA (Toggl → Billi → facture Qonto), réconciliation des sources, reconstitution des journées mal trackées."
 title: /cra
 parent: Skills
 permalink: /skills/cra/
@@ -9,112 +9,131 @@ nav_order: 14
 
 # CRA — Suivi du temps
 
-Skill chapeau pour le suivi du temps de travail. Orchestre les 3 sources de données sans dupliquer leur logique.
+Skill chapeau pour le suivi du temps de travail et la **clôture mensuelle** : Toggl propre → CRA Billi → facture Qonto. Orchestre les sources sans dupliquer leur logique.
 
-## Sources de temps
+## Sources de temps — hiérarchie des preuves
 
-| Source | Rôle | Skill dédié | Pour qui |
-|--------|------|-------------|----------|
-| **Toggl** | Source de vérité (temps réel) | `/toggl-calendar` | Nicolas (accès Toggl personnel) |
-| **Billi CRA** | Déclaratif client | `/billi-cra` | Tous les freelances/salariés |
-| **Git commits** | Proxy jours travaillés | — (commandes git) | Collaborateurs sans Toggl |
+| Source | Rôle | Fiabilité |
+|--------|------|-----------|
+| **Toggl** | Source de vérité (temps réel) | Base — mais incomplète (timers oubliés, trous) |
+| **Calendrier Google** (meetings) | Explique les trous : RDV, standups, déjeuners | Forte |
+| **Sessions Claude Code** (`~/.claude/projects/*/`, timestamps des jsonl ; `toggl-activity <date>` les résume par créneau) | Reconstitue l'activité par projet, heure par heure | Forte |
+| **Commits git / GitHub** | Confirme un sujet et un créneau précis | Appoint — donne peu au final : beaucoup de travail ne committe pas |
 
-## Billi — Accès API
+**Toggl + meetings + sessions Claude permettent de savoir à peu près tout.** Git/GitHub sert à confirmer un sujet (numéro d'issue → repo → client via `gh search issues "<titre>"`), pas à couvrir une journée.
 
-- **App** : https://app.billi.so | **API** : https://api.billi.so
-- **Credentials** : 1Password, item `chezmoi_billi` dans le vault `AI Agents` (email via `op item get chezmoi_billi --vault "AI Agents" --fields username --reveal`, password via `op read "op://AI Agents/chezmoi_billi/password"`)
-- **Auth** : OAuth password grant (voir `/billi-cra` pour le détail auth)
+## La passe mensuelle (clôture)
 
-### Récupérer les CRA via l'API
+C'est le cœur de `/cra <mois>`. Rodée sur août 2026, reproduite chaque mois. L'automation Orca « CRA » fait une première passe le 1er du mois à 6h47 (voir `schedule/README.md`) ; la passe locale sert à compléter et valider.
+
+### 1. Nettoyer Toggl
+
+- **Entrées sans projet** : identifier via le numéro d'issue (`gh search issues "<titre exact>"` → repo → client), les patterns de description, et l'historique des mois précédents (mêmes descriptions déjà classées). Réattribuer par `PUT /workspaces/2584215/time_entries/{id}` avec `project_id`, puis relire.
+- **Timers oubliés** (>10h), pauses déjeuner manquantes : voir `/toggl-calendar`.
+
+### 2. Reconstituer les journées mal trackées
+
+Pour chaque jour ouvré vide ou < 3h tracké :
+- timeline Toggl exacte (⚠️ l'API renvoie de l'**UTC** — toujours convertir en heure de Paris avant de raisonner) ;
+- événements calendrier du jour (meetings = trous légitimes ou temps client) ;
+- sessions Claude Code : histogramme d'événements par heure et par projet ;
+- commits git du jour en confirmation.
+
+Créer les entrées manquantes (`POST /time_entries`, `created_with: "claude-cra"`) uniquement sur indices convergents ; sinon proposer à Nicolas. Ne jamais chevaucher l'existant ni combler un déjeuner. Congés confirmés par Nicolas = journée vide légitime.
+
+### 3. Ventiler par mission
 
 ```bash
-# 1. Get token
-curl -s -X POST https://api.billi.so/oauth/token \
-  -H "Content-Type: application/json" \
-  -d '{"grant_type":"password","email":"<email>","password":"<password>"}'
-
-# 2. Fetch CRAs
-curl -s https://api.billi.so/activity_reports \
-  -H "Authorization: Bearer <token>" \
-  -H "Accept: application/json"
-# Returns activity_reports with: id, month, state, duration, mission, company, freelancer, activities
+cd ~/toggl && uv run missions.py <YYYY-MM>
 ```
 
-## Billi — Missions internes « Qraft — Interne » (non facturable)
+`missions.py` (repo privé `nicolasrouanne/toggl`) contient **le mapping de référence** projet Toggl → mission, applique l'arrondi carry-forward (0,5 j, plafond 1,0 j/jour/mission — Billi refuse toute durée hors `{0, 0.5, 1.0}`) et exclut le perso. Un projet non mappé est signalé : l'ajouter à `missions.py` (nouveau projet Startup Studio → R&D / Innovation par défaut).
 
-Le temps sans client facturable (interne Qraft) est tracké dans un client Billi dédié **`Qraft — Interne`** (company id `605`, agency `1`, tarif **0 €**, freelancer Nicolas = `166`). 4 missions stables, reproductibles chaque mois :
+### 4. Créer / mettre à jour les CRA Billi (drafts)
 
-| Mission | mission_id | rate_id | Contenu |
-|---|---|---|---|
-| Prospection | 304 | 297 | commercial, business dev, propositions |
-| Opérations | 301 | 294 | RH, compta, admin, direction, veille |
-| R&D / Innovation | 302 | 295 | recherche, POCs, tooling agentic (assiette CII) |
-| Contentieux | 303 | 296 | litiges / contentieux |
+Voir « Billi — API » ci-dessous. Règles :
+- **Un jour déjà déclaré dans un CRA = vérité** : ne jamais supprimer ni réduire un jour déclaré ; compléter seulement.
+- Ne toucher qu'aux CRA en `draft` — jamais `pending_signature` ni `signed`.
+- Créer en draft, **jamais soumettre** : l'envoi en signature est le geste de Nicolas.
 
-### Mapping projet Toggl → mission interne (reproductible chaque mois)
+### 5. Facturer (après validation)
 
-| Projet Toggl (id) | → Mission |
-|---|---|
-| Prospection (159925478), Qraft › Prospection (217285296) | **Prospection** |
-| Qraft (164497337), Administratif (190333392), Recrutement (195772172), Qraft › RH (217285294), Facturation (217285293), Veille & Research (217285295), Site coworking (212320887) | **Opérations** |
-| Startup Studio › Car TCO (216891628), Qraft › Agentic Engineering (216891883) | **R&D / Innovation** |
-| Projets « Contentieux » / « Organisation » du client en litige (IDs en config privée) | **Contentieux** |
+Une fois le CRA client validé/signé : facture Qonto en **brouillon**, modelée sur la précédente du client.
 
-**Exclure** (jamais dans un CRA interne) : projets clients facturables et le perso (Perso 149821005, Immobilier, Bruno, Administratif Gybe).
+```bash
+# Modèle : dernière facture du client
+GET https://thirdparty.qonto.com/v2/client_invoices?per_page=100   # Authorization: <org_id>:<api_key>
+# Création en brouillon (le numéro définitif est attribué à la finalisation)
+POST https://thirdparty.qonto.com/v2/client_invoices
+  {"client_id": ..., "status": "draft", "issue_date": ..., "due_date": <+30j>,
+   "performance_start_date": "<1er du mois>", "performance_end_date": "<dernier jour>",
+   "currency": "EUR", "header": ..., "payment_methods": {"iban": ...},
+   "items": [{"title": ..., "description": "Nicolas Rouanne", "quantity": "<jours>",
+              "unit": "day", "unit_price": {"value": "<TJM>", "currency": "EUR"}, "vat_rate": "0.2"}]}
+```
 
-### Remplir un CRA interne (mensuel)
-1. Agréger le temps brut Toggl par mission via le mapping ci-dessus.
-2. Appliquer l'arrondi carry-forward (voir `/toggl-calendar`) **avec plafond 1,0 j/jour** — Billi refuse toute durée hors `{0, 0.5, 1.0}`.
-3. `POST /activity_reports {"format":"billi","month":"YYYY-MM-01T00:00:00.000Z","mission_id":<id>}` puis `PUT /activity_reports/<cra_id> {"activities_attributes":[{date,duration,mission_rate_id}]}`.
+Credentials : 1Password `chezmoi_qonto_qraft` (vault `AI Agents`), champs `organization_id` + `api_key`. Règle : **CRA envoyé en signature avant de finaliser la facture** — les deux doivent raconter la même chose. La finalisation/l'envoi restent le geste de Nicolas.
+
+## Billi — API
+
+- **App** : https://app.billi.so | **API** : https://api.billi.so
+- **Credentials** : 1Password `chezmoi_billi` (vault `AI Agents`) — email via `--fields username`, password via `op read`.
+- **Auth** : OAuth password grant. ⚠️ **Le token expire vite** (< 1h) : re-authentifier avant chaque batch d'appels, ne jamais réutiliser un token stocké d'une étape précédente.
+
+```bash
+# Token
+curl -s -X POST https://api.billi.so/oauth/token -H "Content-Type: application/json" \
+  -d '{"grant_type":"password","email":"<email>","password":"<password>"}'
+# CRA (paginé : ?page=N, filtrer freelancer.id == 166 côté client)
+curl -s https://api.billi.so/activity_reports -H "Authorization: Bearer <token>"
+# Créer un CRA (draft)
+POST /activity_reports {"format":"billi","month":"YYYY-MM-01T00:00:00.000Z","mission_id":<id>}
+# Remplir : jours nouveaux SANS id
+PUT /activity_reports/<cra_id> {"activities_attributes":[{"date":"YYYY-MM-DD","duration":0.5,"mission_rate_id":<rate_id>}]}
+# Modifier un jour existant : AVEC son id (sinon doublon)
+PUT /activity_reports/<cra_id> {"activities_attributes":[{"id":<activity_id>,"duration":1.0}]}
+```
+
+États : `draft` → `pending_signature` (envoyé par Nicolas) → `signed`.
+
+### Missions de Nicolas
+
+IDs de missions, `rate_id`, TJM et règles de rattachement des clients : `missions.md` à côté de ce fichier (privé, jamais synchronisé vers le repo public).
+
+Le mapping projet Toggl → mission est dans `~/toggl/missions.py` (source de vérité, repo privé).
 
 ## Règles de classement (facturable vs interne)
 
 - **CRA client = uniquement le facturable.** Ne jamais facturer à un client du temps qui ne lui revient pas.
-- **Contentieux** : jamais facturé au client adverse → `Qraft — Interne › Contentieux`.
-- **R&D / agentic engineering** : → `R&D / Innovation`, assiette **CII** (voir `/cii`), pas un CRA client.
-- **Un jour déjà déclaré dans un CRA Billi = vérité** (tu as travaillé, même si Toggl l'a raté) : garder les jours déclarés, compléter les jours non déclarés au prorata Toggl — **ne jamais supprimer un jour déclaré**.
-- **Nettoyer Toggl avant de figer** : timers oubliés (>10h), pauses déj, entrées « Sans client » à réattribuer au bon projet (voir `/toggl-calendar`).
+- **Contentieux** → `Qraft — Interne › Contentieux`, jamais facturé.
+- **R&D / agentic engineering / Startup Studio** → `R&D / Innovation`, assiette CII, pas un CRA client.
+- **Perso** (Perso, Immobilier, Bruno, Administratif Gybe) : exclu de tout CRA ; sert uniquement à expliquer un trou.
 
-## Git commits — Extraction jours travaillés
+## Routines associées
 
-Pour les collaborateurs qui n'ont pas Toggl, les commits git servent de proxy :
+| Routine | Cadence | Rôle |
+|---|---|---|
+| « Toggl check » (automation Orca, orca-host) | mar–sam 6h17 | Hygiène de la veille : réattributions, comblement, alertes (prompt versionné dans `toggl-calendar/schedule/`) |
+| « CRA » (automation Orca, orca-host) | le 1er, 6h47 | Passe mensuelle sur le mois écoulé : ventilation + drafts Billi + DM récap (prompt versionné dans `cra/schedule/`) |
+
+## Git commits — Extraction jours travaillés (collaborateurs sans Toggl)
 
 ```bash
-# Tous les auteurs sur une année
-git -C <repo> log --after="YYYY-01-01" --before="YYYY+1-01-01" --format='%aN' | sort | uniq -c | sort -rn
-
-# Jours uniques par auteur
-git -C <repo> log --after="YYYY-01-01" --before="YYYY+1-01-01" --author="Nom" --format="%ad" --date=format:"%Y-%m-%d" | sort -u | wc -l
-
-# Détail jour par jour (pour vérification)
-git -C <repo> log --after="YYYY-01-01" --before="YYYY+1-01-01" --author="Nom" --format="%ad" --date=format:"%Y-%m-%d" | sort -u
+git -C <repo> log --after="YYYY-01-01" --before="YYYY+1-01-01" --author="Nom" \
+  --format="%ad" --date=format:"%Y-%m-%d" | sort -u | wc -l
 ```
+
+Git est indicatif : un jour sans commit ≠ un jour sans travail ; un jour avec commit et sans CRA → probable oubli.
 
 ## Your Task
 
 Quand l'utilisateur invoque `/cra` :
 
-### Sans argument — Vue d'ensemble
+- `/cra <mois>` (ex. `aout`, `2026-08`) → **la passe mensuelle** ci-dessus, étapes 1 à 4. L'étape 5 (facture) seulement sur demande ou après validation explicite du CRA client.
+- `/cra facture <client> <mois>` → étape 5 seule.
+- `/cra toggl <mois>` → déléguer à `/toggl-calendar`.
+- `/cra billi import/export` → déléguer à `/billi-cra`.
+- `/cra git <repo> <année>` → extraction des jours de commits.
+- `/cra compare <mois> <personne>` → réconcilier Toggl / Billi / git, tableau comparatif, signaler les écarts > 2 jours.
 
-Demander la période (mois ou plage) et afficher un résumé par source :
-1. Toggl : `python3 ~/dev/qraft/toggl/main.py <mois>` (ou pointer vers `/toggl-calendar`)
-2. Billi : nombre de CRA remplis/en attente pour la période
-3. Git : jours de commits par auteur sur les repos pertinents
-
-### Avec un sujet
-
-- `/cra toggl <mois>` → déléguer à `/toggl-calendar`
-- `/cra billi import/export` → déléguer à `/billi-cra`
-- `/cra git <repo> <année>` → extraire les jours de commits
-- `/cra compare <mois> <personne>` → réconcilier les sources :
-  1. Récupérer le temps Toggl (si disponible pour cette personne)
-  2. Récupérer les CRA Billi pour cette personne/mois
-  3. Récupérer les jours de commits git
-  4. Afficher un tableau comparatif et signaler les écarts
-
-### Réconciliation
-
-Quand on compare les sources, les règles sont :
-- **Toggl vs Billi** : Toggl est la référence. Si Billi a moins → CRA à compléter
-- **Git vs Billi** : Git est indicatif (un jour sans commit ≠ un jour sans travail). Mais un jour avec commit ET sans CRA → probable oubli
-- **Seuil d'alerte** : écart > 2 jours sur un mois → signaler
+Toujours : montrer la ventilation avant d'écrire dans Billi, rendre compte de chaque écriture avec les IDs (annulable), et rappeler ce qui reste à faire (valider, envoyer, facturer).

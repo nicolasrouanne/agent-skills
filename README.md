@@ -36,20 +36,23 @@ Custom slash commands available in Claude Code. The table below is auto-generate
 | ----- | ----------- |
 | [`/billi-cra`](./.claude/skills/billi-cra/SKILL.md) | Import CRAs from an Excel file into Billi, or export CRAs from Billi to Excel. Bidirectional sync of activity reports. |
 | [`/cloudflare-workers-nextjs`](./.claude/skills/cloudflare-workers-nextjs/SKILL.md) | Deploy a Next.js 16 app to Cloudflare Workers via OpenNext, with Workers Builds for automatic PR preview deployments. |
-| [`/cra`](./.claude/skills/cra/SKILL.md) | Suivi du temps : réconciliation Toggl, Billi CRA et git commits. Vue d'ensemble et détection d'écarts entre les sources. |
+| [`/compress-video`](./.claude/skills/compress-video/SKILL.md) | Compress a video file using the local `compress-video` CLI (ffmpeg wrapper — 1080p, 24 fps, H.264 2500k, AAC 192k). Use when asked to compress, shrink, lighten or convert a video, or to concatenate clips. |
+| [`/cra`](./.claude/skills/cra/SKILL.md) | Suivi du temps : clôture mensuelle des CRA (Toggl → Billi → facture Qonto), réconciliation des sources, reconstitution des journées mal trackées. |
 | [`/create-skill`](./.claude/skills/create-skill/SKILL.md) | Create a new Claude Code skill based on conversation context, a file, or a description of the skill's purpose. |
-| [`/cross-post`](./.claude/skills/cross-post/SKILL.md) | Cross-post content to LinkedIn, Twitter/X, and Slack. Adapts content to each platform's format and constraints. |
 | [`/find-skills`](./.claude/skills/find-skills/SKILL.md) | Helps users discover and install agent skills when they ask questions like "how do I do X", "find a skill for X", "is there a skill that can...", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill. |
 | [`/gogcli`](./.claude/skills/gogcli/SKILL.md) | CLI for Gmail, Calendar, Drive, Contacts, Tasks, Sheets. |
-| [`/merge`](./.claude/skills/merge/SKILL.md) | Merge a PR (with merge commit) and prune merged branches. Usage: /merge [pr-number] |
-| [`/new-project`](./.claude/skills/new-project/SKILL.md) | Scaffold a new full-stack project with backend (Scalingo) and Next.js frontend (Cloudflare Pages), initialize git/GitHub, and plan using GitHub issues. |
-| [`/notion-article`](./.claude/skills/notion-article/SKILL.md) | Write and publish a blog article to Notion based on conversation context, a file, or a topic. Optionally cross-post to LinkedIn, Twitter, and Slack. |
+| [`/merge`](./.claude/skills/merge/SKILL.md) | Merge a PR (with merge commit) and prune merged branches, or enable GitHub auto-merge with --auto. Usage: /merge [--auto] [pr-number] |
+| [`/new-project`](./.claude/skills/new-project/SKILL.md) | Scaffold a new full-stack project with backend (Scalingo) and Next.js frontend (Cloudflare Workers), initialize git/GitHub, and plan using GitHub issues. |
+| [`/notion-note`](./.claude/skills/notion-note/SKILL.md) | Write an internal note in the Qraft Notion Tech subpage (French, long-form voice) from the current session, a file, or a topic. Internal only — never published or cross-posted. |
 | [`/notion-pdf`](./.claude/skills/notion-pdf/SKILL.md) | Render a Notion page (commercial proposal, client doc) as a Qraft-branded PDF, faithful to the Notion content. Notion markdown -> styled HTML -> PDF via headless Chrome. |
 | [`/pr`](./.claude/skills/pr/SKILL.md) | Commit changes, create a branch, push, and open a pull request. If working from an issue, automatically links it with "Closes #X". |
+| [`/publish`](./.claude/skills/publish/SKILL.md) | Turn a piece of content into a qraft.tech blog article (FR + EN) plus a LinkedIn and an X post, all scheduled on the next free Mon/Thu slot at least 48h out. No validation step — the 48h are the review window. |
 | [`/qonto-invoices`](./.claude/skills/qonto-invoices/SKILL.md) | Analyse des factures clients Qonto par période de prestation (pas date d'émission) et compte de destination. Sortie HT/TTC, top clients, audit des cas ambigus. |
+| [`/qonto-receipts`](./.claude/skills/qonto-receipts/SKILL.md) | Audit missing receipts (justificatifs) on Qonto transactions for any org (gybe, qraft), excluding lost/not-required ones. Then hunt recoverable invoices by email/portal and attach them to the right transaction. |
 | [`/review-apply`](./.claude/skills/review-apply/SKILL.md) | Apply PR review feedback — reply to questions and implement requested changes. Usage: /review-apply [pr-url-or-number] |
 | [`/sentry-triage`](./.claude/skills/sentry-triage/SKILL.md) | Triage unresolved Sentry issues for any project. Analyze errors, identify root causes, prioritize by impact, and optionally apply fixes or update issue status. |
 | [`/tmba-process`](./.claude/skills/tmba-process/SKILL.md) | Process a "Tech My Breath Away" meeting: move the Fireflies-created Notion page to the Talks database, and upload the video to Google Drive. |
+| [`/toggl-calendar`](./.claude/skills/toggl-calendar/SKILL.md) | Per-day, per-client timesheet calendar from Toggl. Shows work days per client per day, in 0.5-day increments with carry-forward rounding. Can also clean anomalies (overnight timers, missing lunch breaks) and reassign unattributed entries to clients. |
 | [`/transcribe`](./.claude/skills/transcribe/SKILL.md) | Transcribe audio files using the local `transcribe` CLI (WhisperX large-v3 + diarisation + optional LLM correction). |
 | [`/update-knowledge`](./.claude/skills/update-knowledge/SKILL.md) | Update .claude/knowledge/ files with architectural context and design rationale learned during the current session. |
 | [`/workspace`](./.claude/skills/workspace/SKILL.md) | Read open Cursor editor tabs to understand what the user is working on. |

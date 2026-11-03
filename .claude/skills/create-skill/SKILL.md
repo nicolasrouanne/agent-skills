@@ -21,7 +21,7 @@ Create new Claude Code skills from context, descriptions, or examples.
 2. **Ask the user** using AskUserQuestion:
    - Skill name (propose one based on context, lowercase with hyphens)
    - Brief description (one sentence for the frontmatter)
-   - Target location: user-level (`~/.claude/skills/`) or project-level (`./.claude/skills/`)
+   - Target location: user-level (`~/dev/claude/.claude/skills/`) or project-level (`./.claude/skills/`)
    - Any specific tools or MCP servers the skill should use
 
 3. **Determine skill type** based on context:
@@ -55,13 +55,7 @@ Brief overview of what this skill accomplishes.
 
 ## Your Task
 
-[Numbered steps for what the skill should do]
-
-1. **First step** - what to do and why
-2. **Second step** - continue the workflow
-3. **Ask the user** using AskUserQuestion if decisions needed
-4. **Execute** the main action
-5. **Report results** back to user
+[The outcome, the constraints, and how to check the result. Number steps only where their order matters.]
 
 ## Guidelines
 
@@ -102,7 +96,7 @@ Brief overview of what this skill accomplishes.
 
 **DO:**
 - Keep skills focused on a single purpose
-- Include clear step-by-step instructions
+- Match specificity to fragility: exact commands for fragile or destructive operations; the goal, constraints and how to verify for judgment work
 - Document which tools/MCPs are needed
 - Add example usage patterns
 - Use AskUserQuestion for user decisions
@@ -115,7 +109,7 @@ Brief overview of what this skill accomplishes.
 
 ## Placement Decision
 
-**User-level (`~/.claude/skills/`)** for:
+**User-level (`~/dev/claude/.claude/skills/`)** for:
 - Generic utilities useful across all projects
 - Personal workflow preferences
 - Skills that don't reference project-specific paths

@@ -40,7 +40,6 @@ Given an audio file path as argument:
 **DON'T:**
 - Don't reimplement the pipeline inline. If something's broken, fix it in `~/dev/personal/transcribe/`.
 - Don't pass non-WAV files through manual ffmpeg conversion — the CLI handles all input formats.
-- Don't worry about the medium-model whisper-cpp setup — it's been replaced.
 
 ## Input Handling
 

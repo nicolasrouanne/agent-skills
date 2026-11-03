@@ -4,10 +4,10 @@
 #   year      : "2025" — target performance year
 #   window    : "2"    — months after Dec 31 to scan for late-issued invoices
 #   accounts  : { "<iban>": "<account_name>", ... } — IBAN → account name map
-#               Built dynamically from `get_qonto_organization` so no IBAN
+#               Built dynamically from `GET /v2/organization` so no IBAN
 #               is hard-coded in the public repo.
 #
-# Input  : raw JSON from Qonto MCP `get_client_invoices` (the `{result: {...}}` envelope).
+# Input  : raw JSON from the Qonto API `GET /v2/client_invoices` (`{client_invoices: [...], meta: {...}}`).
 # Output : plain-text report with per-account totals (HT + TTC) and an audit
 #          section listing invoices whose period source is `issue_date_fallback`.
 #
@@ -53,7 +53,7 @@ def scope_end($year; $window):
 | ($window // "2") as $WINDOW
 | ($accounts // {}) as $ACCOUNTS
 
-| .result.client_invoices
+| .client_invoices
 | map(
     . as $inv
     | (iban_to_account($ACCOUNTS; .payment_methods[0].iban // "")) as $account
