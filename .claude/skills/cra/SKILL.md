@@ -98,7 +98,7 @@ PUT /activity_reports/<cra_id> {"activities_attributes":[{"id":<activity_id>,"du
 
 ### Missions de Nicolas
 
-IDs de missions, `rate_id`, TJM et règles de rattachement des clients : `missions.md` à côté de ce fichier (privé, jamais synchronisé vers le repo public).
+IDs de missions, `rate_id`, TJM et règles de rattachement des clients : `private/missions.md` à côté de ce fichier (jamais synchronisé vers le repo public).
 
 Le mapping projet Toggl → mission est dans `~/toggl/missions.py` (source de vérité, repo privé).
 
