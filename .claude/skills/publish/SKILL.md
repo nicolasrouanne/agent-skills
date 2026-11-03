@@ -39,37 +39,15 @@ Cadence is 2 posts/week, Mon + Thu. Never schedule twice the same day, never clo
 
 ## 3. Open the article PR
 
-The article lives in `qrafttech/website`, format in its README ("Blog" section). Work in a clone of the repo (the local checkout if there is one, else `gh repo clone qrafttech/website` into the scratchpad), on a branch `blog/<slug-fr>` from an up-to-date `origin/main`.
+The article lives in `qrafttech/website`. Its [CONTRIBUTING.md](https://github.com/qrafttech/website/blob/main/CONTRIBUTING.md) is the reference for the folder, the front matter, the Markdown, the images and the `publish-blog` rules: read it, this section only adds what is specific to this skill.
 
-```
-content/blog/<slug-fr>/
-  fr.md
-  en.md
-  *.jpg / *.png   # the article's images
-```
+Work in a clone of the repo (the local checkout if there is one, else `gh repo clone qrafttech/website` into the scratchpad), on a branch `blog/<slug-fr>` from an up-to-date `origin/main`, pushed to the repo itself, never to a fork.
 
-Each file starts with its front matter:
+- **slug**: the slugified title of that language: `node -e 'console.log(process.argv[1].normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,""))' "<title>"`. The folder is the FR slug; if it already exists, pick another title.
+- **date**: the slot day, in both files. That morning the article goes live, before the posts.
+- **author**: `Nicolas Rouanne`. Images that carry text exist in two versions, `-fr` and `-en`; the others serve both languages.
 
-```yaml
----
-title: "Auditer ses skills Claude Code"
-slug: auditer-ses-skills-claude-code
-date: 2026-10-05
-author: "Nicolas Rouanne"
----
-```
-
-- **slug**: the slugified title of that language: `node -e 'console.log(process.argv[1].normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,""))' "<title>"`. Set once, it is the URL: never change it after the merge. The folder is the FR slug; if it already exists, pick another title.
-- **date**: the slot day, `YYYY-MM-DD`. That morning (Europe/Paris), the website's `publish-blog` workflow merges the PR and the article goes live, before the posts. Without `date`, it is a draft and the PR is never merged.
-- **cover**, **excerpt**: optional. `cover: cover.jpg` is a file of the folder; `excerpt` defaults to the first paragraph.
-
-Body in Markdown (GFM):
-
-- Callouts: a quote whose first line is `> [!NOTE]`, `> [!TIP]` or `> [!WARNING]`.
-- Images: the file in the folder, referenced by name, with the caption as title: `![alt](shot.jpg "caption")`. One file serves both languages unless the image has text in it.
-- Links to other articles: internal paths, `/blog/<slug-fr>` or `/en/blog/<slug-en>`.
-
-Commit, push, and open the PR: title `blog: <FR title>`, body = the slot and the two public URLs. **Don't merge it, and don't enable auto-merge**: the website's `publish-blog` workflow merges it on the morning of its `date`, without an approval, unless the PR is closed, a draft, has a review requesting changes, failing checks or a conflict with main. The branch must be `blog/<slug-fr>`, otherwise the workflow ignores it. Wait for the Vercel check and take the preview URL from it (`gh pr checks <n>`, or the vercel bot's comment): drafts and scheduled articles show there, marked "Programmé".
+Commit, push, and open the PR: title `blog: <FR title>`, body = the slot and the two public URLs. **Don't merge it, and don't enable auto-merge**: the `publish-blog` workflow does, on the morning of its `date`. Wait for the Vercel check and take the preview URL from it (`gh pr checks <n>`, or the vercel bot's comment): drafts and scheduled articles show there, marked "Programmé".
 
 ### Images
 
