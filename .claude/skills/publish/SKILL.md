@@ -47,7 +47,7 @@ Work in a clone of the repo (the local checkout if there is one, else `gh repo c
 - **date**: the slot day, in both files. That morning the article goes live, before the posts.
 - **author**: `Nicolas Rouanne`. Images that carry text exist in two versions, `-fr` and `-en`; the others serve both languages.
 
-Commit, push, and open the PR: title `blog: <FR title>`, body = the slot and the two public URLs. **Don't merge it, and don't enable auto-merge**: the `publish-blog` workflow does, on the morning of its `date`. Wait for the Vercel check and take the preview URL from it (`gh pr checks <n>`, or the vercel bot's comment): drafts and scheduled articles show there, marked "Programmé".
+Commit, push, and open the PR: title `blog: <FR title>`, body = the slot and the two public URLs. **Don't merge it, and don't enable auto-merge**: the `publish-blog` workflow does, on the morning of its `date`. Wait for the Vercel check and take the preview URL from it (`gh pr checks <n>`, or the vercel bot's comment): drafts and scheduled articles show there, marked "Programmé". Link the article pages, `<preview>/blog/<slug-fr>` and `<preview>/en/blog/<slug-en>`, check they load, and add them to the PR body.
 
 ### Images
 
@@ -71,7 +71,8 @@ Quote tweets and LinkedIn reposts aren't supported by post-bridge: don't attempt
 
 ```
 Programmé : <jour> <date> <heure>
-Article : PR <website PR URL> → preview <Vercel preview URL>
+Article : PR <website PR URL>
+Preview : <preview>/blog/<slug-fr> / <preview>/en/blog/<slug-en>
 Publié sur : <qraft.tech FR URL> / <qraft.tech EN URL>
 Posts : LinkedIn <post-bridge id>, X <post-bridge id>
 Merge : automatique le <date> au matin (passer la PR en draft pour la retenir)
