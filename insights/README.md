@@ -28,10 +28,10 @@ The HTML reports are self-contained and can be viewed in several ways:
 
 1. **Locally**: Open the HTML file directly in your browser
 2. **GitHub**: View directly on GitHub (it will render the HTML)
-3. **GitHub Pages**: If you enable Pages for this repo, the reports will be accessible at:
-   - `https://nicolasrouanne.github.io/claude/insights/report-2026-07-07.html`
-   - `https://nicolasrouanne.github.io/claude/insights/report-2026-05-11.html`
-   - `https://nicolasrouanne.github.io/claude/insights/report-2026-02-10.html`
+3. **GitHub Pages**: The public mirror [`nicolasrouanne/agent-skills`](https://github.com/nicolasrouanne/agent-skills) publishes them at:
+   - <https://nicolasrouanne.github.io/agent-skills/insights/report-2026-07-07.html>
+   - <https://nicolasrouanne.github.io/agent-skills/insights/report-2026-05-11.html>
+   - <https://nicolasrouanne.github.io/agent-skills/insights/report-2026-02-10.html>
 
 > **Note:** The July 7, 2026 report was sanitized before publishing to this public repo — personal financial and confidential client/legal specifics were generalized. See the raw report in `~/.claude/usage-data/` for the unedited version.
 

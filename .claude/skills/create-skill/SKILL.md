@@ -43,7 +43,7 @@ Create new Claude Code skills from context, descriptions, or examples.
 ---
 name: skill-name
 description: One sentence describing what this skill does.
-# Jekyll nav (only needed for user-level skills published at nicolasrouanne.github.io/claude):
+# Jekyll nav (only needed for skills synced to the public mirror, published at nicolasrouanne.github.io/agent-skills):
 title: /skill-name
 parent: Skills
 permalink: /skills/skill-name/
