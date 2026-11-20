@@ -33,7 +33,7 @@ Create new Claude Code skills from context, descriptions, or examples.
 
 5. **Write the file** to the appropriate location. Filename MUST be `SKILL.md` (uppercase) — the GitHub Pages deploy looks for that exact name.
 
-6. **Sync the docs** if this is a user-level skill in `~/dev/claude/`: run `python3 scripts/sync_docs.py` to regenerate the skill tables in `README.md` and `skills.md`.
+6. **Sync the docs** if this is a user-level skill in `~/dev/claude/`: run `python3 scripts/sync_docs.py` to regenerate the skill table in `README.md`.
 
 7. **Remind the user** to commit the new skill and the regenerated tables together — CI rejects PRs where the tables drift from the filesystem.
 
