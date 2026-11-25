@@ -53,6 +53,20 @@ Commit, push, and open the PR: title `blog: <FR title>`, body = the slot and the
 
 For app screenshots, Playwright with the system Chrome (`channel: 'chrome'`, plus `--enable-unsafe-swiftshader` for WebGL maps in headless) at `deviceScaleFactor: 2`, exported as JPEG ~80 % at 2400 px. Hide third-party branding with injected CSS or DOM edits before the shot rather than cropping.
 
+### X posts
+
+When the article quotes or shows an X post, render it to PNG with `xeet` (public page, no X API), from the image's `xeet` or else `@xeet/cli` in a Node container, piped through stdin/stdout (the Docker daemon is on the host, bind mounts don't work):
+
+```sh
+if command -v xeet >/dev/null; then XEET=xeet; else XEET='docker run --rm -i node:25-slim npx -y @xeet/cli@0.1.2'; fi
+$XEET resolve "<x.com post URL>" --media --width 550 --dpr 2 \
+  | $XEET render - --surface web-timeline --width 550 --dpr 2 --theme light -o - > tweet-<author>.png
+```
+
+- `web-timeline`, not `web-detail`: the public page only gives a long post's first 280 characters, and `web-detail` shows them cut, without "Show more".
+- Insert it as a linked image, no caption: `[![<alt>](tweet-<author>.png)](<post URL>)`. The site renders it as a 550 px rounded card that opens the post.
+- Introduce the author in the sentence: their name linked to their X profile, plus who they are, taken from their X bio ("le CEO de Coinbase", "de Vercel Labs").
+
 Public URLs: `https://qraft.tech/blog/<slug-fr>` and `https://qraft.tech/en/blog/<slug-en>`.
 
 ## 4. Schedule the posts
