@@ -1,6 +1,6 @@
 ---
 name: publish
-description: Turn a piece of content into a qraft.tech blog article (FR + EN) plus a LinkedIn and an X post, all scheduled on the next free Mon/Thu slot at least 48h out. No validation step — the 48h are the review window.
+description: Turn a piece of content into a qraft.tech blog article (FR + EN) plus a LinkedIn and an X post, dated on the next free Mon/Thu slot at least 48h out. The article PR stays a draft until Nicolas has reread it; the posts are scheduled right away for the same date.
 title: /publish
 parent: Skills
 permalink: /skills/publish/
@@ -9,7 +9,7 @@ nav_order: 11
 
 # Publish
 
-One gesture: a source becomes a blog article in the website repo (FR + EN, one PR on `qrafttech/website`) and a LinkedIn + X post in post-bridge, all scheduled on the same slot. **No validation step**: the slot is at least 48h out, and those 48h are Nicolas's review window, on the PR's Vercel preview. Cancelling is cheap (see the end).
+One gesture: a source becomes a blog article in the website repo (FR + EN, one PR on `qrafttech/website`) and a LinkedIn + X post in post-bridge, all on the same slot. **Nothing goes out unread**: the PR is opened as a draft, dated on a slot at least 48h out, and stays a draft until Nicolas says he has reread it (on the PR's Vercel preview). Then it is marked ready and goes out on its date. The posts are scheduled right away for the same date, so they sit in the calendar and aren't forgotten; the price is that a draft still unread the day before has to be moved with its posts (step 6). Cancelling is cheap (see the end).
 
 Voice: read `.claude/knowledge/writing-style.md` first — "Long-form" for the article, "LinkedIn / X" for the posts.
 
@@ -27,7 +27,7 @@ If the source is too thin for an article (one-liner, no real detail, no code), s
 ## 1. Pick the slot
 
 1. List scheduled posts: post-bridge `list_posts` (status scheduled).
-2. Slot = first **Monday or Thursday, 7:30 Europe/Paris**, at least **48h from now**, with no scheduled post that day. Compute the UTC time with the timezone, don't hardcode it: `date -u -d 'TZ="Europe/Paris" <YYYY-MM-DD> 07:30' +%FT%TZ` (05:30Z in summer, 06:30Z in winter).
+2. Slot = first **Monday or Thursday, 7:30 Europe/Paris**, at least **48h from now**, with no scheduled post and no dated article that day. Compute the UTC time with the timezone, don't hardcode it: `date -u -d 'TZ="Europe/Paris" <YYYY-MM-DD> 07:30' +%FT%TZ` (05:30Z in summer, 06:30Z in winter).
 3. Dedup: if a scheduled post or an existing article already covers the same subject, stop and say which one. Articles are the `content/blog/*/{fr,en}.md` files on `qrafttech/website` main, plus the open PRs that add some (`gh pr list --repo qrafttech/website --json number,title,files`). Their `date` front matter is the day they go out: a day taken by an article but not by a post is taken too.
 
 Cadence is 2 posts/week, Mon + Thu. Never schedule twice the same day, never closer than 48h.
@@ -35,7 +35,7 @@ Cadence is 2 posts/week, Mon + Thu. Never schedule twice the same day, never clo
 ## 2. Write the article
 
 - English first, then French. Long-form register from `writing-style.md`: the spirit and tone are fixed, the composition is free — shape each article around its own story, no template.
-- **Sensitive-terms scan (required)**: write each version to a scratchpad file and run `~/dev/claude/scripts/scan_sensitive.sh <files>`. Exit 1 → show the matches and **stop**: with no validation step, a hit is the one case where Nicolas must decide (rewrite around it, or clear that specific match). Exit 2 (terms list unreachable) → fail closed, don't publish.
+- **Sensitive-terms scan (required)**: write each version to a scratchpad file and run `~/dev/claude/scripts/scan_sensitive.sh <files>`. Exit 1 → show the matches and **stop**: Nicolas must decide before anything is opened (rewrite around it, or clear that specific match). Exit 2 (terms list unreachable) → fail closed, don't publish.
 
 ## 3. Open the article PR
 
@@ -47,7 +47,7 @@ Work in a clone of the repo (the local checkout if there is one, else `gh repo c
 - **date**: the slot day, in both files. That morning the article goes live, before the posts.
 - **author**: `Nicolas Rouanne`. Images that carry text exist in two versions, `-fr` and `-en`; the others serve both languages.
 
-Commit, push, and open the PR: title `blog: <FR title>`, body = the slot and the two public URLs. **Don't merge it, and don't enable auto-merge**: the `publish-blog` workflow does, on the morning of its `date`. Wait for the Vercel check and take the preview URL from it (`gh pr checks <n>`, or the vercel bot's comment): drafts and scheduled articles show there, marked "Programmé". Link the article pages, `<preview>/blog/<slug-fr>` and `<preview>/en/blog/<slug-en>`, check they load, and add them to the PR body.
+Commit, push, and open the PR **as a draft** (`gh pr create --draft`): title `blog: <FR title>`, body = the slot and the two public URLs. **Don't merge it, and don't enable auto-merge**: the `publish-blog` workflow does, on the morning of its `date`, once the PR is marked ready; it never merges a draft. Wait for the Vercel check and take the preview URL from it (`gh pr checks <n>`, or the vercel bot's comment): drafts and scheduled articles show there, marked "Programmé". Link the article pages, `<preview>/blog/<slug-fr>` and `<preview>/en/blog/<slug-en>`, check they load, and add them to the PR body.
 
 ### Images
 
@@ -84,18 +84,29 @@ Quote tweets and LinkedIn reposts aren't supported by post-bridge: don't attempt
 ## 5. Report
 
 ```
-Programmé : <jour> <date> <heure>
-Article : PR <website PR URL>
+Daté du : <jour> <date> <heure>
+Article : PR <website PR URL> (draft, en attente de relecture)
 Preview : <preview>/blog/<slug-fr> / <preview>/en/blog/<slug-en>
 Publié sur : <qraft.tech FR URL> / <qraft.tech EN URL>
-Posts : LinkedIn <post-bridge id>, X <post-bridge id>
-Merge : automatique le <date> au matin (passer la PR en draft pour la retenir)
-Annuler : fermer la PR + supprimer le post dans post-bridge
+Posts : LinkedIn <post-bridge id>, X <post-bridge id>, programmés le <date>
+Relire avant : <veille du date> ; sinon décaler article + posts, ou les posts sortent seuls
 ```
+
+## 6. The reread
+
+The workflow runs every morning at 02:30 UTC and merges every ready PR whose `date` is today or past; the posts go out at 7:30 whatever the PR's state. So the article must be marked ready **by the day before its date**. A draft still unread on its date doesn't go out, but its posts do, alone, announcing an article that isn't there. Marked ready on its date or later, it goes out at the next morning's run, back-dated under its old `date`.
+
+When Nicolas says he has reread the article (and the posts):
+
+1. If the date is today or past, **move** it first (below): new `date` in both files and the posts with it, on the next free Mon/Thu slot (no 48h, the reread is done).
+2. `gh pr ready <n>`.
+3. Apply his edits to the posts with `update_post` (sensitive-terms scan again).
+
+If he says the reread won't happen by the day before, move the article and its posts together.
 
 ## Cancel or move
 
-- **Hold**: convert the PR to draft (`gh pr ready --undo <n>`): the workflow skips it, and the posts still go out at their slot, so move or delete them too. Nicolas can't request changes on a PR pushed under his own account, so draft is the way.
+- **Hold** (once ready): back to draft (`gh pr ready --undo <n>`): the workflow skips it, and the posts still go out at their slot, so move them with it. Nicolas can't request changes on a PR pushed under his own account, so draft is the way.
 - **Cancel**: close the PR (once merged: a PR that removes `date` from both files), `delete_post` in post-bridge.
-- **Move**: new `date` in both files (a commit on the PR, or a new PR once merged) + `update_post` with the new `scheduled_at` — same 48h and free-slot rules.
+- **Move**: new `date` in both files (a commit on the PR, or a new PR once merged) + `update_post` with the new `scheduled_at` — same free-slot rule, and 48h while the PR is still a draft.
 - **Edit after review**: if a post changes a verdict or a figure, fix the article too (FR and EN), and vice versa.
